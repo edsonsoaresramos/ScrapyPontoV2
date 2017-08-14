@@ -24,17 +24,17 @@ EMAIL_FOLDER = "inbox"
 
 ORG_EMAIL   = "@gmail.com"
 FROM_EMAIL  = "r3im0z" + ORG_EMAIL
-FROM_PWD    = "50p#1414"
+FROM_PWD    = emailPwd
 SMTP_SERVER = "imap.gmail.com"
 SMTP_PORT   = 993
 
-def checkEmail():
+def checkEmail(emailPwd):
     try:
         SMTP_SERVER = 'imap.gmail.com'
         SMTP_PORT = 993
 
         fromEmail = 'r3im0z@gmail.com'
-        password = "50p#1414"
+        password = emailPwd
 
         mail = imaplib.IMAP4_SSL(SMTP_SERVER)
         mail.login(fromEmail, password)
@@ -95,7 +95,7 @@ def process_mailbox(M):
 # M = imaplib.IMAP4_SSL('imap.gmail.com')
 #
 # try:
-#     rv, data = M.login(EMAIL_ACCOUNT, "50p#1414")
+#     rv, data = M.login(EMAIL_ACCOUNT, emailPwd)
 # except imaplib.IMAP4.error:
 #     print ("LOGIN FAILED!!! ")
 #     sys.exit(1)
