@@ -1,150 +1,93 @@
-# -*- coding: utf-8 -*-
-from bs4 import BeautifulSoup
-import re
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import os
-import smtplib
-import imaplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from email.mime.text import MIMEText
-from email.header import Header
-import time
-import datetime
+#-------------------------------------------------------------------------------
+# Name:        read_email.py
+# Purpose:     Retrieve All the emails from Gmail
+#
+# Author:      Kiran Chandrashekhar
+#
+# Created:     20/06/2016
+# Copyright:   (c) kiran 2016
+# Licence:      In the spirit of sharing knowledge and happiness,
+#               You can copy, edit, share
+#-------------------------------------------------------------------------------
+
+def main():
+    pass
+
+if __name__ == '__main__':
+    main()
+
+
 import sys
+from datetime import datetime, timedelta
+import os
+import re
+import imaplib
+import email
 
 
-EMAIL_ACCOUNT = "r3im0z@gmail.com"
+# # Read only emails from last 3 days
+no_days_query = 1
 
-# Use 'INBOX' to read inbox.  Note that whatever folder is specified,
-# after successfully running this script all emails in that folder
-# will be marked as read.
-EMAIL_FOLDER = "inbox"
-
-ORG_EMAIL   = "@gmail.com"
-FROM_EMAIL  = "r3im0z" + ORG_EMAIL
-FROM_PWD    = emailPwd
-SMTP_SERVER = "imap.gmail.com"
-SMTP_PORT   = 993
-
-def checkEmail(emailPwd):
-    try:
-        SMTP_SERVER = 'imap.gmail.com'
-        SMTP_PORT = 993
-
-        fromEmail = 'r3im0z@gmail.com'
-        password = emailPwd
-
-        mail = imaplib.IMAP4_SSL(SMTP_SERVER)
-        mail.login(fromEmail, password)
-        mail.select('inbox')
-
-        type, data = mail.search(None, 'ALL')
-        mail_ids = data[0]
-        id_list = mail_ids.split()
-
-        first_email_id = int(id_list[0])
-        last_email_id = int(id_list[-1])
-        #for i in range(last_email_id, first_email_id, -1):
-        for i in data[0].split():
-            type, data = mail.fetch(i, '(RFC822)')
-
-            for response in data:
-                msg = mail.message_from_string(data[0][1])
-                subject = msg['subject']
-                emailFrom = msg['from']
-                print('De: ' + emailFrom + '\n')
-                print('Tema: ' + subject + '\n')
-    except(Exception):
-        print(str(Exception))
-    except (imaplib.IMAP4.error):
-        print('Error al logar')
-
-def process_mailbox(M):
-    """
-    Do something with emails messages in the folder.
-    For the sake of this example, print some headers.
-    """
-
-    rv, data = M.search(None, "ALL")
-    if rv != 'OK':
-        print("No messages found!")
-        return
-
-    for num in data[0].split():
-        rv, data = M.fetch(num, '(RFC822)')
-        if rv != 'OK':
-            print("ERROR getting message", num)
-            return
-
-        msg = M.message_from_string(data[1])
-        hdr = M.header.make_header(M.header.decode_header(msg['Subject']))
-        subject = str(hdr)
-        print('Message %s: %s' % (num, subject))
-        print('Raw Date:', msg['Date'])
-        # Now convert to local date-time
-        date_tuple = M.utils.parsedate_tz(msg['Date'])
-        if date_tuple:
-            local_date = datetime.datetime.fromtimestamp(
-                M.utils.mktime_tz(date_tuple))
-            print ("Local Date:", \
-                local_date.strftime("%a, %d %b %Y %H:%M:%S"))
+server = "imap.gmail.com"
+port_num = 993
 
 
-# M = imaplib.IMAP4_SSL('imap.gmail.com')
-#
-# try:
-#     rv, data = M.login(EMAIL_ACCOUNT, emailPwd)
-# except imaplib.IMAP4.error:
-#     print ("LOGIN FAILED!!! ")
-#     sys.exit(1)
-#
-# print(rv, data)
-#
-# rv, mailboxes = M.list()
-# if rv == 'OK':
-#     print("Mailboxes:")
-#     print(mailboxes)
-#
-# rv, data = M.select(EMAIL_FOLDER)
-# if rv == 'OK':
-#     print("Processing mailbox...\n")
-#     process_mailbox(M)
-#     M.close()
-# else:
-#     print("ERROR: Unable to open mailbox ", rv)
-#
-# M.logout()
+def read_email1(gmail_user, gmail_pwd):
+
+    conn = imaplib.IMAP4_SSL(server, port_num)
+    conn.login(gmail_user, gmail_pwd)
+    conn.select()
+
+    #Check status for 'OK'
+    status, all_folders = conn.list()
+
+    folder_to_search = 'INBOX'
+
+    #Check status for 'OK'
+    status, select_info = conn.select(folder_to_search)
+
+    if status == 'OK':
+        today = datetime.today()
+        cutoff = today - timedelta(days=no_days_query)
+
+        from_email = ''
+        #from_email = 'contact@sapnaedu.in'
+
+        search_key = from_email + " after:" + cutoff.strftime('%Y/%m/%d')
+
+        status, message_ids = conn.search(None, 'X-GM-RAW', search_key)
 
 
-def read_email_from_gmail():
-    try:
-        mail = imaplib.IMAP4_SSL(SMTP_SERVER)
-        mail.login(FROM_EMAIL,FROM_PWD)
-        mail.select('inbox')
+        for id in message_ids[0].split():
+            status, data = conn.fetch(id, '(RFC822)')
 
-        type, data = mail.search(None, 'ALL')
-        mail_ids = data[0]
+            email_msg = email.message_from_string(data[0][1])
 
-        id_list = mail_ids.split()
-        first_email_id = int(id_list[0])
-        latest_email_id = int(id_list[-1])
+            #Print all the Attributes of email message like Subject,
+            #print email_msg.keys()
 
+            subject = email_msg['Subject']
+            sender_email =  email_msg['From']
+            sent_to_email =  email_msg['To']
 
-        for i in range(latest_email_id,first_email_id, -1):
-            typ, data = mail.fetch(i, '(RFC822)' )
+            for part in email_msg.walk():
+                if part.get_content_type() == 'text/plain':
+                    email_content = part.get_payload() # prints the raw text
+                    #TODO :
+                    #process_email() #Delete, Mark as Spam, Forward it
+                    #TODO :
+                    #print email_content
 
-            for response_part in data:
-                if isinstance(response_part, tuple):
-                    msg = mail.message_from_string(response_part[1])
-                    email_subject = msg['subject']
-                    email_from = msg['from']
-                    print ('From : ' + email_from + '\n')
-                    print ('Subject : ' + email_subject + '\n')
+    else:
+        print( "Error")
+    ## Search for relevant messages
+    ## see http://tools.ietf.org/html/rfc3501#section-6.4.5
 
-    except (Exception):
-        print (str(Exception))
+if __name__ == '__main__':
 
-#checkEmail()
-read_email_from_gmail()
+    # Gmail Configuration
+    gmail_user = ''
+    gmail_pwd = ''
+
+    ret = read_email1(gmail_user, gmail_pwd)
+
