@@ -31,4 +31,4 @@ def readmail(emailAddress, pwd):
     except(Exception):
         print(str(Exception))
 
-readmail('r3im0z@gmail.com', '50p#144rt#ur')
+readmail()
